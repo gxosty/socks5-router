@@ -1,0 +1,3 @@
+D:/projects/socks5_router/build/CMakeFiles/s5r_cli.dir
+D:/projects/socks5_router/build/CMakeFiles/edit_cache.dir
+D:/projects/socks5_router/build/CMakeFiles/rebuild_cache.dir
