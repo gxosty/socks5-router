@@ -28,7 +28,7 @@ Params parse_args(int argc, char** argv)
 
     parser.add_argument("--port")
         .help("Open SOCKS5 server on port.")
-        .default_value(7530)
+        .default_value(7580)
         .scan<'i', int>()
         .nargs(1);
 

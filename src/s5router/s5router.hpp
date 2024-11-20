@@ -11,7 +11,7 @@ namespace s5r
     public:
         S5Router(
             // open connection at port
-            uint16_t server_port = 7530,
+            uint16_t server_port = 7580,
 
             // listen on all interfaces
             // defaults to 0.0.0.0
@@ -41,8 +41,6 @@ namespace s5r
         bool _running;
 
     private:
-        // Server related
-        void _client_loop(int sock, uint32_t u32_route_ip);
         void _server_loop(int socks[], int sock_count, in_addr route_ip);
 
         int _open_server_socket(in_addr address);

@@ -1,5 +1,12 @@
 #include "utils.hpp"
-#include <ws2tcpip.h>
+
+#ifdef _WIN32
+    #include <ws2tcpip.h>
+#endif
+
+#ifdef __linux__
+    #include <arpa/inet.h>
+#endif
 
 namespace s5r
 {
@@ -92,5 +99,11 @@ namespace s5r
 
         freeaddrinfo(result);
         return num_addrs;
+    }
+
+    int get_socket_addr(int sock, sockaddr_in* addr)
+    {
+        socklen_t addrlen = sizeof(sockaddr_in);
+        return getsockname(sock, (struct sockaddr *)addr, &addrlen);
     }
 }

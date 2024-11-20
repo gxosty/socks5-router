@@ -2,6 +2,7 @@
 
 #include "common/net.hpp"
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -17,4 +18,5 @@ namespace s5r
 
     void get_netifaces(std::vector<NetworkInterface>* netifaces);
     int resolve_dns(const char *domain_name, struct in_addr *ip_addrs, int max_addrs);
+    int get_socket_addr(int sock, sockaddr_in* addr);
 }

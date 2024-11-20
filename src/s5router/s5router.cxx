@@ -144,115 +144,6 @@ namespace s5r
         return _running;
     }
 
-    void S5Router::_client_loop(int sock, uint32_t u32_route_ip)
-    {
-        int rt_sock = 0;
-
-        {
-            Socks5Handshake h(sock);
-            in_addr _u32_route_ip;
-            _u32_route_ip.s_addr = u32_route_ip;
-            auto status = h.handshake(_u32_route_ip, &rt_sock);
-            if (status != S5HandshakeStatus::Ok)
-            {
-                std::cerr << "SOCKS5 handshake error" << std::endl;
-                ::shutdown(sock, SD_BOTH);
-                ::close(sock);
-
-                if (rt_sock)
-                {
-                    ::shutdown(rt_sock, SD_BOTH);
-                    ::close(rt_sock);
-                }
-            }
-        }
-
-        pollfd fds[2];
-        fds[0].fd = sock;
-        fds[0].events = POLLIN;
-        fds[0].revents = 0;
-
-        fds[1].fd = rt_sock;
-        fds[1].events = POLLIN;
-        fds[1].revents = 0;
-
-        char buffer[4096];
-        int buffer_size = 4096;
-
-        while (true)
-        {
-            int poll_result = poll(fds, 2, 10000);
-
-            if (poll_result == -1)
-            {
-                std::cerr << "Client poll error" << std::endl;
-                break;
-            }
-            else if (poll_result == 0)
-            {
-                // time out
-            }
-            else
-            {
-                // client
-                if (fds[0].revents & POLLIN)
-                {
-                    buffer_size = ::recv(sock, buffer, 4096, 0);
-
-                    if (buffer_size == -1)
-                    {
-                        std::cerr << "Client socket recv == -1" << std::endl;
-                        break;
-                    }
-
-                    ::send(rt_sock, buffer, buffer_size, 0);
-
-                    fds[0].revents = 0;
-                }
-                else if (fds[0].revents & POLLHUP)
-                {
-                    break;
-                }
-                else if (fds[0].revents & (POLLERR | POLLNVAL))
-                {
-                    std::cerr << "Client socket error" << std::endl;
-                    break;
-                }
-
-                // route/server
-                if (fds[1].revents & POLLIN)
-                {
-                    buffer_size = ::recv(rt_sock, buffer, 4096, 0);
-
-                    if (buffer_size == -1)
-                    {
-                        std::cerr << "Route socket recv == -1" << std::endl;
-                        break;
-                    }
-
-                    ::send(sock, buffer, buffer_size, 0);
-
-                    fds[1].revents = 0;
-                }
-                else if (fds[1].revents & POLLHUP)
-                {
-                    break;
-                }
-                else if (fds[1].revents & (POLLERR | POLLNVAL))
-                {
-                    std::cerr << "Route socket error" << std::endl;
-                    break;
-                }
-            }
-        }
-
-        ::shutdown(sock, SD_BOTH);
-        ::close(sock);
-
-        ::shutdown(rt_sock, SD_BOTH);
-        ::close(rt_sock);
-    }
-
     void S5Router::_server_loop(int socks[], int sock_count, in_addr route_ip)
     {
         pollfd fds[sock_count];
@@ -291,7 +182,10 @@ namespace s5r
 
                         if (cl_sock != -1)
                         {
-                            std::thread th(&S5Router::_client_loop, this, cl_sock, route_ip.s_addr);
+                            Socks5Proxy* proxy = new Socks5Proxy(addr, cl_sock, route_ip);
+                            std::thread th([](void* _proxy) -> void {
+                                ((Socks5Proxy*)_proxy)->serve();
+                            }, (void*)proxy);
                             th.detach();
                         }
                         else
