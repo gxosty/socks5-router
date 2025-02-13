@@ -48,35 +48,45 @@ namespace s5r
             return;
         }
 
+        sockaddr_in server_address;
+
+        get_socket_addr(rt_sock, &server_address);
+
+        std::string client_ip = inet_ntoa(_cl_addr.sin_addr);
+        std::string server_ip = inet_ntoa(server_address.sin_addr);
+
+        std::cout
+            << client_ip
+            << ":" << ntohs(_cl_addr.sin_port)
+            << " -> "
+            << server_ip
+            << ":" << ntohs(server_address.sin_port)
+	        << " | ";
+
+        if (command == S5Command::TCPStream)
         {
-            sockaddr_in server_address;
-
-            get_socket_addr(rt_sock, &server_address);
-
-            std::string client_ip = inet_ntoa(_cl_addr.sin_addr);
-            std::string server_ip = inet_ntoa(server_address.sin_addr);
-
+            std::cout << "TCP" << std::endl;            
+            _tcp_loop(rt_sock);
             std::cout
                 << client_ip
                 << ":" << ntohs(_cl_addr.sin_port)
                 << " -> "
                 << server_ip
                 << ":" << ntohs(server_address.sin_port)
-                << " | ";
-        }
-
-        if (command == S5Command::TCPStream)
-        {
-            std::cout << "TCP loop" << std::endl;
-            _tcp_loop(rt_sock);
-            std::cout << inet_ntoa(_cl_addr.sin_addr) << ":" << ntohs(_cl_addr.sin_port) << " TCP loop closed" << std::endl;
+                << " | TCP closed" << std::endl;
         }
         else if (command == S5Command::UDPPort)
         {
-            std::cout << "UDP loop" << std::endl;
+            std::cout << "UDP" << std::endl;
             _udp_loop(rt_sock, udp_sock);
-            std::cout << inet_ntoa(_cl_addr.sin_addr) << ":" << ntohs(_cl_addr.sin_port) <<  " UDP loop closed" << std::endl;
-        }
+            std::cout
+                << client_ip
+                << ":" << ntohs(_cl_addr.sin_port)
+                << " -> "
+                << server_ip
+                << ":" << ntohs(server_address.sin_port)
+                << " | UDP closed" << std::endl;
+	}
 
         delete this;
     }
@@ -252,7 +262,7 @@ namespace s5r
                         break;
                     }
 
-                    std::cout << "UDP -> " << buffer_size << std::endl;
+                    // std::cout << "UDP -> " << buffer_size << std::endl;
 
                     sv_addr.sin_addr = destinations[0].address;
                     sv_addr.sin_port = destinations[0].port;
@@ -270,7 +280,7 @@ namespace s5r
                 }
                 else if (fds[0].revents & POLLHUP)
                 {
-                    std::cout << "UDP POLLHUP" << std::endl;
+                    // std::cout << "UDP POLLHUP" << std::endl;
                     break;
                 }
                 else if (fds[0].revents & (POLLERR | POLLNVAL))
@@ -307,7 +317,7 @@ namespace s5r
                     *udp_addr = sv_addr.sin_addr;
                     *request->get_port_ptr() = sv_addr.sin_port;
 
-                    std::cout << "UDP <- " << buffer_size << std::endl;
+                    // std::cout << "UDP <- " << buffer_size << std::endl;
 
                     ::sendto(udp_sock, buffer, buffer_size, 0,
                         (sockaddr*)&cl_addr, cl_addr_len);
@@ -316,7 +326,7 @@ namespace s5r
                 }
                 else if (fds[1].revents & POLLHUP)
                 {
-                    std::cout << "UDP2 POLLHUP" << std::endl;
+                    // std::cout << "UDP2 POLLHUP" << std::endl;
                     break;
                 }
                 else if (fds[1].revents & (POLLERR | POLLNVAL))
